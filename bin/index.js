@@ -3,18 +3,12 @@ import { parseFlags } from "../lib/flags.js";
 import { ftpList } from "../lib/ftpHandler.js";
 import { expandLocalVars, isFileURL, isFtp, showHelp } from "../lib/utils.js";
 import { readLocalFile, createFile, readHeaders } from "../lib/fileHandler.js";
-import { request } from "../lib/httpHandler.js";
-// import { outPut } from "../lib/outputHandler.js";
+import { parallelRequests, request } from "../lib/httpHandler.js";
 
 const args = process.argv.slice(2);
 const flags = parseFlags(args);
 const nonFlagArgs = args.filter((arg) => !arg.startsWith("-"));
 const module = nonFlagArgs[0];
-
-if (flags.help) {
-  showHelp(module);
-  process.exit(0);
-}
 
 let url = args.find(
   (arg) =>
@@ -24,16 +18,24 @@ let url = args.find(
     arg.startsWith("ftp://"),
 );
 
-if (!url) {
-  console.log("Error: Usage: ./index.js [options] <url>");
-  process.exit(1);
-}
+let urls = args.filter((item) => !item.startsWith("--")) || [];
 
 url = expandLocalVars(url);
 
 if (flags.user === undefined) flags.user = "anonymous:anonymous";
 
 const main = async () => {
+  if (!url && !flags.help && !flags.parallel) {
+    console.log("Error: Usage: ./index.js [options] <url>");
+    process.exitCode = 1;
+    return;
+  }
+
+  if (flags.help) {
+    showHelp(module);
+    return;
+  }
+
   if (isFtp(url)) {
     await ftpList(url, flags);
     return;
@@ -47,11 +49,22 @@ const main = async () => {
     } else {
       readLocalFile(url, flags);
     }
-    process.exit(0);
+    return;
   }
 
-  let method = flags.method || (flags.upload ? "PUT" : "GET");
-  request(url, method, flags);
+  if (flags.parallel) {
+    await parallelRequests(urls, flags);
+  } else {
+    let method = flags.method || (flags.upload ? "PUT" : "GET");
+    await request(url, method, flags);
+  }
 };
 
-await main();
+(async () => {
+  try {
+    await main();
+  } catch (error) {
+    console.error("Error:", error.message);
+    process.exit(1);
+  }
+})();
