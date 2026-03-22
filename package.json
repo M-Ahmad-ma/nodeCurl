@@ -1,6 +1,6 @@
 {
   "name": "curlie",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A curl-like CLI tool for HTTP, HTTPS, FTP, and file operations",
   "type": "module",
   "main": "bin/index.js",
