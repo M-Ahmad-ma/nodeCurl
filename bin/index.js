@@ -26,7 +26,7 @@ if (flags.user === undefined) flags.user = "anonymous:anonymous";
 
 const main = async () => {
   if (!url && !flags.help && !flags.parallel) {
-    console.log("Error: Usage: ./index.js [options] <url>");
+    console.log("Error: Usage: curlie [options] <url>");
     process.exitCode = 1;
     return;
   }
